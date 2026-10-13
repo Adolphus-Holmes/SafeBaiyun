@@ -1,5 +1,7 @@
 package cn.huacheng.safebaiyun.compose
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Color as AndroidColor
 import android.graphics.drawable.GradientDrawable
@@ -7,13 +9,16 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.widget.EditText
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,6 +32,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import cn.huacheng.safebaiyun.unlock.DataRepo
 
 /**
@@ -55,8 +61,18 @@ fun EditDialog(state: MutableState<Boolean>, initData: () -> Pair<String, String
                 .padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            NativeTextInput(value = mac, onValueChange = setMac, hint = "Mac", context = context)
-            NativeTextInput(value = key, onValueChange = setKey, hint = "Key", context = context)
+            ClipboardInputRow(
+                value = mac,
+                onValueChange = setMac,
+                hint = "Mac",
+                context = context
+            )
+            ClipboardInputRow(
+                value = key,
+                onValueChange = setKey,
+                hint = "Key",
+                context = context
+            )
             Button(
                 modifier = Modifier.padding(8.dp),
                 onClick = {
@@ -73,18 +89,51 @@ fun EditDialog(state: MutableState<Boolean>, initData: () -> Pair<String, String
 }
 
 @Composable
-private fun NativeTextInput(
+private fun ClipboardInputRow(
     value: String,
     onValueChange: (String) -> Unit,
     hint: String,
     context: Context
 ) {
-    AndroidView(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        NativeTextInput(
+            value = value,
+            onValueChange = onValueChange,
+            hint = hint,
+            modifier = Modifier.weight(1f)
+        )
+        IconButton(
+            onClick = {
+                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                val clip = clipboard.primaryClip
+                if (clip != null && clip.itemCount > 0) {
+                    val text = clip.getItemAt(0).coerceToText(context).toString()
+                    onValueChange(text)
+                }
+            }
+        ) {
+            // Use a text glyph instead of a Material icon dependency to keep the existing dependency set unchanged.
+            Text(text = "▣", fontSize = 22.sp)
+        }
+    }
+}
+
+@Composable
+private fun NativeTextInput(
+    value: String,
+    onValueChange: (String) -> Unit,
+    hint: String,
+    modifier: Modifier = Modifier
+) {
+    AndroidView(
+        modifier = modifier,
         factory = {
-            EditText(context).apply {
+            EditText(it).apply {
                 this.hint = hint
                 setSingleLine(true)
                 textSize = 16f
