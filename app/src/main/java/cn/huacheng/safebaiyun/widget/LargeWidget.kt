@@ -30,6 +30,8 @@ import androidx.glance.layout.size
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import androidx.glance.unit.ColorProvider
+import android.graphics.Color
 import cn.huacheng.safebaiyun.R
 import cn.huacheng.safebaiyun.ShortcutActivity
 
@@ -91,9 +93,9 @@ object LargeWidget : GlanceAppWidget() {
 
             Text(
                 text = "平安白云门禁",
-                style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp),
+                style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp, color = ColorProvider(day = Color.WHITE, night = Color.WHITE)),
             )
-            Text(text = "点击解锁门禁", style = TextStyle(fontSize = 14.sp))
+            Text(text = "点击解锁门禁", style = TextStyle(fontSize = 14.sp, color = ColorProvider(day = Color.WHITE, night = Color.WHITE)))
         }
 
     }
