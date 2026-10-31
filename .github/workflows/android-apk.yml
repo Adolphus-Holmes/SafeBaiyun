@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - fix/edit-dialog-ime-copy
+      - feat/multi-config-bluetooth-import-export
   workflow_dispatch:
 
 permissions:
