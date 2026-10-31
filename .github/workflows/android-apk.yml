@@ -102,4 +102,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           APK_PATH: app/build/outputs/apk/release/app-release.apk
           RELEASE_TAG: android-release-${{ github.run_number }}
-        run: gh release create "$RELEASE_TAG" "$APK_PATH" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "SafeBaiyun Android release ${{ github.run_number }}" --notes "Signed Release APK. R8 code shrinking and resource shrinking enabled. Version 1.2 (versionCode 3). Commit: $GITHUB_SHA" --prerelease
+        run: |
+          gh release create "$RELEASE_TAG" "$APK_PATH" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "SafeBaiyun Android release ${{ github.run_number }}" \
+            --notes "Signed Release APK. R8 code shrinking and resource shrinking enabled. Version 1.2 (versionCode 3). Commit: $GITHUB_SHA" \
+            --prerelease
