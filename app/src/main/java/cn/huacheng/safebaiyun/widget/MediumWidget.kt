@@ -68,9 +68,9 @@ object MediumWidget : GlanceAppWidget() {
             Column {
                 Text(
                     text = "白云通",
-                    style = TextStyle(fontWeight = FontWeight.Medium, fontSize = 16.sp, color = ColorProvider(day = Color.White, night = Color.White)),
+                    style = TextStyle(fontWeight = FontWeight.Medium, fontSize = 16.sp, color = ColorProvider(Color.White)),
                 )
-                Text(text = "点击解锁", style = TextStyle(fontSize = 14.sp, color = ColorProvider(day = Color.WHITE, night = Color.WHITE)))
+                Text(text = "点击解锁", style = TextStyle(fontSize = 14.sp, color = ColorProvider(Color.White)))
             }
             Spacer(modifier = GlanceModifier.defaultWeight())
             CircleIconButton(
