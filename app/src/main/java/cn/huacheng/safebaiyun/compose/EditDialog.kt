@@ -14,11 +14,14 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
@@ -32,106 +35,99 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.huacheng.safebaiyun.unlock.DataRepo
-
-/**
- *
- *@description:
- *@author: guangzhou
- *@create: 2024-05-10
- */
+import cn.huacheng.safebaiyun.unlock.DoorConfig
+import cn.huacheng.safebaiyun.util.showToast
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditDialog(state: MutableState<Boolean>, initData: () -> Pair<String, String>) {
+fun EditDialog(
+    state: MutableState<Boolean>,
+    initData: () -> DoorConfig,
+    onSaved: () -> Unit
+) {
     val data = remember { initData() }
-    val (mac, setMac) = remember { mutableStateOf(data.first) }
-    val (key, setKey) = remember { mutableStateOf(data.second) }
+    val (name, setName) = remember { mutableStateOf(data.name) }
+    val (mac, setMac) = remember { mutableStateOf(data.mac) }
+    val (key, setKey) = remember { mutableStateOf(data.key) }
     val context = LocalContext.current
-    val keyboardController = LocalSoftwareKeyboardController.current
-    val focusManager = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    val focus = LocalFocusManager.current
 
     ModalBottomSheet(onDismissRequest = { state.value = false }) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .imePadding()
-                .verticalScroll(rememberScrollState())
+            modifier = Modifier.fillMaxWidth().imePadding().verticalScroll(rememberScrollState())
                 .padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            ClipboardInputRow(
-                value = mac,
-                onValueChange = setMac,
-                hint = "Mac",
-                context = context
-            )
-            ClipboardInputRow(
-                value = key,
-                onValueChange = setKey,
-                hint = "Key",
-                context = context
-            )
+            NativeTextInput(name, setName, "Name", Modifier.fillMaxWidth())
+            ClipboardInputRow(mac, setMac, "Mac", context)
+            ClipboardInputRow(key, setKey, "Key", context)
+
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                OutlinedButton(onClick = {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(android.content.ClipData.newPlainText("SafeBaiyun configs", DataRepo.exportJson()))
+                    showToast("配置 JSON 已复制到剪贴板")
+                }, modifier = Modifier.weight(1f)) { Text("导出配置") }
+                OutlinedButton(onClick = {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    val clip = clipboard.primaryClip
+                    val raw = if (clip != null && clip.itemCount > 0) clip.getItemAt(0).coerceToText(context).toString() else ""
+                    try {
+                        val imported = DataRepo.importJson(raw)
+                        DataRepo.saveConfigs(imported, 0)
+                        onSaved()
+                        state.value = false
+                        showToast("配置导入成功")
+                    } catch (e: Exception) {
+                        showToast("导入失败：${e.message ?: "JSON 格式错误"}")
+                    }
+                }, modifier = Modifier.weight(1f)) { Text("从剪贴板导入") }
+            }
             Button(
                 modifier = Modifier.padding(8.dp),
                 onClick = {
-                    keyboardController?.hide()
-                    focusManager.clearFocus()
-                    DataRepo.save(mac, key)
-                    state.value = false
+                    keyboard?.hide()
+                    focus.clearFocus()
+                    if (name.isBlank()) {
+                        showToast("配置名称不能为空")
+                    } else {
+                        DataRepo.saveActiveConfig(DoorConfig(name.trim(), mac.trim(), key.trim()))
+                        onSaved()
+                        state.value = false
+                    }
                 }
-            ) {
-                Text(text = "保存")
-            }
+            ) { Text("保存") }
         }
     }
 }
 
 @Composable
-private fun ClipboardInputRow(
-    value: String,
-    onValueChange: (String) -> Unit,
-    hint: String,
-    context: Context
-) {
+private fun ClipboardInputRow(value: String, onValueChange: (String) -> Unit, hint: String, context: Context) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        NativeTextInput(
-            value = value,
-            onValueChange = onValueChange,
-            hint = hint,
-            modifier = Modifier.weight(1f)
-        )
-        IconButton(
-            onClick = {
-                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                val clip = clipboard.primaryClip
-                if (clip != null && clip.itemCount > 0) {
-                    val text = clip.getItemAt(0).coerceToText(context).toString()
-                    onValueChange(text)
-                }
-            }
-        ) {
-            // Use a text glyph instead of a Material icon dependency to keep the existing dependency set unchanged.
-            Text(text = "▣", fontSize = 22.sp)
+        NativeTextInput(value, onValueChange, hint, Modifier.weight(1f))
+        IconButton(onClick = {
+            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = clipboard.primaryClip
+            if (clip != null && clip.itemCount > 0) {
+                onValueChange(clip.getItemAt(0).coerceToText(context).toString())
+            } else showToast("剪贴板为空")
+        }) {
+            // Unicode clipboard/paste symbol; avoid unsupported icon glyph from font fallback.
+            Text(text = "📋", fontSize = 20.sp)
         }
     }
 }
 
 @Composable
-private fun NativeTextInput(
-    value: String,
-    onValueChange: (String) -> Unit,
-    hint: String,
-    modifier: Modifier = Modifier
-) {
+private fun NativeTextInput(value: String, onValueChange: (String) -> Unit, hint: String, modifier: Modifier = Modifier) {
     AndroidView(
         modifier = modifier,
-        factory = {
-            EditText(it).apply {
+        factory = { ctx ->
+            EditText(ctx).apply {
                 this.hint = hint
                 setSingleLine(true)
                 textSize = 16f
@@ -146,10 +142,7 @@ private fun NativeTextInput(
                 background = GradientDrawable().apply {
                     setColor(AndroidColor.TRANSPARENT)
                     setCornerRadius(4 * resources.displayMetrics.density)
-                    setStroke(
-                        (resources.displayMetrics.density).toInt().coerceAtLeast(1),
-                        AndroidColor.LTGRAY
-                    )
+                    setStroke((resources.displayMetrics.density).toInt().coerceAtLeast(1), AndroidColor.LTGRAY)
                 }
                 setText(value)
                 addTextChangedListener(object : TextWatcher {
