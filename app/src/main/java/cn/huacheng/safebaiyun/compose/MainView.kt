@@ -41,6 +41,7 @@ fun MainView(navController: NavHostController) {
     val activeIndex = remember { mutableStateOf(DataRepo.activeIndex().coerceIn(0, configs.value.lastIndex)) }
     val showEdit = remember { mutableStateOf(false) }
     val showConfigList = remember { mutableStateOf(false) }
+    val creatingConfig = remember { mutableStateOf(false) }
 
     fun refreshConfigs() {
         configs.value = DataRepo.readConfigs()
@@ -100,8 +101,9 @@ fun MainView(navController: NavHostController) {
         if (showEdit.value) {
             EditDialog(
                 state = showEdit,
-                initData = { DataRepo.activeConfig() },
-                onSaved = { refreshConfigs() }
+                initData = { if (creatingConfig.value) DoorConfig("", "", "") else DataRepo.activeConfig() },
+                onSaved = { refreshConfigs(); creatingConfig.value = false },
+                isNew = creatingConfig.value
             )
         }
         if (showConfigList.value) {
@@ -110,6 +112,11 @@ fun MainView(navController: NavHostController) {
                 title = { Text("切换配置") },
                 text = {
                     Column {
+                        TextButton(onClick = {
+                            showConfigList.value = false
+                            creatingConfig.value = true
+                            showEdit.value = true
+                        }) { Text("+ 新建配置", color = androidx.compose.ui.graphics.Color(0xFF1976D2)) }
                         configs.value.forEachIndexed { index, config ->
                             TextButton(onClick = {
                                 DataRepo.selectConfig(index)
