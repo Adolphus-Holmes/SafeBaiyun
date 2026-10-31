@@ -2,7 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
 
@@ -28,10 +29,7 @@
             </intent-filter>
         </activity>
 
-
-        <activity
-            android:name=".ShortcutActivity"
-            android:exported="true" />
+        <activity android:name=".ShortcutActivity" android:exported="true" android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
         <activity-alias
             android:name="cn.huacheng.safebaiyun.QuickUnlockActivity"
@@ -45,30 +43,18 @@
             </intent-filter>
         </activity-alias>
 
-        <receiver
-            android:name=".widget.MediumReceiver"
-            android:exported="true">
-
+        <receiver android:name=".widget.MediumReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/medium_widget_config" />
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/medium_widget_config" />
         </receiver>
 
-        <receiver
-            android:name=".widget.LargeReceiver"
-            android:exported="true">
-
+        <receiver android:name=".widget.LargeReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/large_widget_config" />
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/large_widget_config" />
         </receiver>
-
     </application>
-
 </manifest>

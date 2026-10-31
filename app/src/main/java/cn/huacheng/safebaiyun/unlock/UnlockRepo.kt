@@ -42,25 +42,42 @@ object UnlockRepo {
     private val logList = mutableListOf("Hello World")
     val logFlow: MutableStateFlow<List<String>> = MutableStateFlow(logList.toList())
 
-    fun unlock() {
-        val bluetoothAdapter =
-            (ContextHolder.get()
-                .getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
-
-        config = DataRepo.readData()
-
-        if (!BluetoothAdapter.checkBluetoothAddress(config.first)) {
+    fun unlock(mac: String = DataRepo.readData().first, key: String = DataRepo.readData().second) {
+        val manager = ContextHolder.get().getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+        val bluetoothAdapter = manager?.adapter
+        if (bluetoothAdapter == null) {
+            showToast("当前设备不支持蓝牙")
+            return
+        }
+        if (!bluetoothAdapter.isEnabled) {
+            showToast("蓝牙未开启，请先开启蓝牙")
+            return
+        }
+        if (!BluetoothAdapter.checkBluetoothAddress(mac)) {
             showToast("Mac地址格式错误")
             return
         }
-        connect(bluetoothAdapter)
+        if (key.isBlank()) {
+            showToast("Key不能为空")
+            return
+        }
+        config = mac to key
+        try {
+            connect(bluetoothAdapter)
+        } catch (e: SecurityException) {
+            showToast("缺少蓝牙连接权限，请授权后重试")
+            return
+        } catch (e: Exception) {
+            showToast("蓝牙连接失败：${e.message ?: "未知错误"}")
+            return
+        }
 
+        autoDisconnectJob?.cancel()
         autoDisconnectJob = GlobalScope.launch {
             delay(10000)
-            if (isActive) {
+            if (isActive && this@UnlockRepo::gatt.isInitialized) {
                 log("10s超时，自动断开链接")
-                gatt.disconnect()
-                gatt.close()
+                runCatching { gatt.disconnect(); gatt.close() }
             }
         }
     }
