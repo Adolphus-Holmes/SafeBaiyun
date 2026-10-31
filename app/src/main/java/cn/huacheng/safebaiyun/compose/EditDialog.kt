@@ -43,7 +43,8 @@ import cn.huacheng.safebaiyun.util.showToast
 fun EditDialog(
     state: MutableState<Boolean>,
     initData: () -> DoorConfig,
-    onSaved: () -> Unit
+    onSaved: () -> Unit,
+    isNew: Boolean = false
 ) {
     val data = remember { initData() }
     val (name, setName) = remember { mutableStateOf(data.name) }
@@ -92,7 +93,14 @@ fun EditDialog(
                     if (name.isBlank()) {
                         showToast("配置名称不能为空")
                     } else {
-                        DataRepo.saveActiveConfig(DoorConfig(name.trim(), mac.trim(), key.trim()))
+                        val edited = DoorConfig(name.trim(), mac.trim(), key.trim())
+                        if (isNew) {
+                            val all = DataRepo.readConfigs().toMutableList()
+                            all.add(edited)
+                            DataRepo.saveConfigs(all, all.lastIndex)
+                        } else {
+                            DataRepo.saveActiveConfig(edited)
+                        }
                         onSaved()
                         state.value = false
                     }
@@ -117,7 +125,7 @@ private fun ClipboardInputRow(value: String, onValueChange: (String) -> Unit, hi
             } else showToast("剪贴板为空")
         }) {
             // Unicode clipboard/paste symbol; avoid unsupported icon glyph from font fallback.
-            Text(text = "📋", fontSize = 20.sp)
+            Text(text = "粘贴", fontSize = 14.sp)
         }
     }
 }
