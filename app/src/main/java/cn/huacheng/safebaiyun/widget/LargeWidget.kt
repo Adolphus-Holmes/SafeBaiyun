@@ -93,9 +93,9 @@ object LargeWidget : GlanceAppWidget() {
 
             Text(
                 text = "平安白云门禁",
-                style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp, color = ColorProvider(day = Color.White, night = Color.White)),
+                style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp, color = ColorProvider(Color.White)),
             )
-            Text(text = "点击解锁门禁", style = TextStyle(fontSize = 14.sp, color = ColorProvider(day = Color.WHITE, night = Color.WHITE)))
+            Text(text = "点击解锁门禁", style = TextStyle(fontSize = 14.sp, color = ColorProvider(Color.White)))
         }
 
     }
