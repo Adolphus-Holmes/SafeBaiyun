@@ -30,7 +30,7 @@ class ShortcutActivity : ComponentActivity() {
  }
  private fun doUnlock(){try{val cfg=DataRepo.activeConfig();UnlockRepo.unlock(cfg.mac,cfg.key)}catch(e:SecurityException){toast("蓝牙权限不足，请在应用中授权后重试");openMain();return}catch(e:Exception){toast("解锁失败：${e.message ?: "未知错误"}")};finish()}
  @Deprecated("Deprecated in Java") override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?){super.onActivityResult(requestCode,resultCode,data);if(requestCode==REQ_ENABLE){val a=(getSystemService(BLUETOOTH_SERVICE) as? BluetoothManager)?.adapter;if(resultCode==RESULT_OK&&a?.isEnabled==true)doUnlock() else {toast("蓝牙未开启，无法解锁");finish()}}}
- @Deprecated("Deprecated in Java") override fun onRequestPermissionsResult(requestCode:Int,permissions:Array<out String>,grantResults:IntArray){super.onRequestPermissionsResult(requestCode,permissions,grantResults);if(requestCode==REQ_PERMISSION){if(grantResults.firstOrNull()==PackageManager.PERMISSION_GRANTED)ensureBluetooth() else {toast("需要蓝牙连接权限才能解锁");openMain()}}}
+ @Deprecated("Deprecated in Java") override fun onRequestPermissionsResult(requestCode:Int,permissions:Array<String>,grantResults:IntArray){super.onRequestPermissionsResult(requestCode,permissions,grantResults);if(requestCode==REQ_PERMISSION){if(grantResults.firstOrNull()==PackageManager.PERMISSION_GRANTED)ensureBluetooth() else {toast("需要蓝牙连接权限才能解锁");openMain()}}}
  private fun toast(msg:String){Toast.makeText(this,msg,Toast.LENGTH_LONG).show()}
  private fun openMain(){startActivity(Intent(this,MainActivity::class.java));finish()}
 }
