@@ -29,7 +29,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".ShortcutActivity" android:exported="true" />
+        <activity android:name=".ShortcutActivity" android:exported="true" android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
         <activity-alias
             android:name="cn.huacheng.safebaiyun.QuickUnlockActivity"
