@@ -19,7 +19,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -64,27 +63,6 @@ fun EditDialog(
             ClipboardInputRow(mac, setMac, "Mac", context)
             ClipboardInputRow(key, setKey, "Key", context)
 
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedButton(onClick = {
-                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    clipboard.setPrimaryClip(android.content.ClipData.newPlainText("SafeBaiyun configs", DataRepo.exportJson()))
-                    showToast("配置 JSON 已复制到剪贴板")
-                }, modifier = Modifier.weight(1f)) { Text("导出配置") }
-                OutlinedButton(onClick = {
-                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    val clip = clipboard.primaryClip
-                    val raw = if (clip != null && clip.itemCount > 0) clip.getItemAt(0).coerceToText(context).toString() else ""
-                    try {
-                        val imported = DataRepo.importJson(raw)
-                        DataRepo.saveConfigs(imported, 0)
-                        onSaved()
-                        state.value = false
-                        showToast("配置导入成功")
-                    } catch (e: Exception) {
-                        showToast("导入失败：${e.message ?: "JSON 格式错误"}")
-                    }
-                }, modifier = Modifier.weight(1f)) { Text("从剪贴板导入") }
-            }
             Button(
                 modifier = Modifier.padding(8.dp),
                 onClick = {
@@ -125,7 +103,7 @@ private fun ClipboardInputRow(value: String, onValueChange: (String) -> Unit, hi
             } else showToast("剪贴板为空")
         }) {
             // Unicode clipboard/paste symbol; avoid unsupported icon glyph from font fallback.
-            Text(text = "粘贴", fontSize = 14.sp)
+            Text(text = "⎘", fontSize = 22.sp, color = androidx.compose.ui.graphics.Color.White)
         }
     }
 }
@@ -139,8 +117,8 @@ private fun NativeTextInput(value: String, onValueChange: (String) -> Unit, hint
                 this.hint = hint
                 setSingleLine(true)
                 textSize = 16f
-                setTextColor(AndroidColor.BLACK)
-                setHintTextColor(AndroidColor.GRAY)
+                setTextColor(AndroidColor.WHITE)
+                setHintTextColor(AndroidColor.LTGRAY)
                 setPadding(
                     (12 * resources.displayMetrics.density).toInt(),
                     (14 * resources.displayMetrics.density).toInt(),
