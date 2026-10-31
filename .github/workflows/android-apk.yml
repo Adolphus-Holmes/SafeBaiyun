@@ -1,4 +1,4 @@
-name: Build and publish Android APK
+name: Build optimized debug-signed Android APK
 
 on:
   push:
@@ -29,91 +29,37 @@ jobs:
           gradle-version: '8.4'
           validate-wrappers: false
 
-      - name: Validate and prepare release signing key
-        env:
-          IS_FORK: ${{ github.event.repository.fork }}
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      - name: Build optimized Debug APK
+        run: gradle assembleDebug --stacktrace
+
+      - name: Verify APK signature and report size
         run: |
-          if [ "$IS_FORK" = "true" ]; then
-            echo "HAS_SIGNING=false" >> "$GITHUB_ENV"
-            echo "::warning::This is a forked repository. GitHub does not pass Actions secrets to fork-originated workflows; building an unsigned optimized Release APK for size and compile validation."
-            exit 0
-          fi
-
-          missing=""
-          [ -n "$KEYSTORE_BASE64" ] || missing="$missing ANDROID_KEYSTORE_BASE64"
-          [ -n "$KEYSTORE_PASSWORD" ] || missing="$missing ANDROID_KEYSTORE_PASSWORD"
-          [ -n "$KEY_ALIAS" ] || missing="$missing ANDROID_KEY_ALIAS"
-          [ -n "$KEY_PASSWORD" ] || missing="$missing ANDROID_KEY_PASSWORD"
-          if [ -n "$missing" ]; then
-            echo "::error::Missing required repository secrets:$missing"
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          SDK_ROOT="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          APKSIGNER="$(find "$SDK_ROOT/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          if [ -z "$APKSIGNER" ]; then
+            echo "::error::Android apksigner was not found."
             exit 1
           fi
-
-          KEYSTORE_FILE="$RUNNER_TEMP/safebaiyun-release.keystore"
-          printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 --decode > "$KEYSTORE_FILE"
-          if [ ! -s "$KEYSTORE_FILE" ]; then
-            echo "::error::Decoded keystore is empty. Check ANDROID_KEYSTORE_BASE64."
-            exit 1
-          fi
-          if ! keytool -list -keystore "$KEYSTORE_FILE" -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" >/dev/null 2>&1; then
-            echo "::error::Keystore validation failed. Check the Base64 content, keystore password and key alias."
-            exit 1
-          fi
-
-          echo "ANDROID_KEYSTORE_FILE=$KEYSTORE_FILE" >> "$GITHUB_ENV"
-          echo "HAS_SIGNING=true" >> "$GITHUB_ENV"
-          echo "Release signing key validated."
-
-      - name: Build optimized Release APK
-        env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: gradle assembleRelease --stacktrace
-
-      - name: Select APK and verify signature
-        id: select_apk
-        run: |
-          SIGNED_APK="app/build/outputs/apk/release/app-release.apk"
-          UNSIGNED_APK="app/build/outputs/apk/release/app-release-unsigned.apk"
-          if [ -s "$SIGNED_APK" ]; then
-            APK="$SIGNED_APK"
-            APK_TYPE="release-signed"
-            SDK_ROOT="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
-            APKSIGNER="$(find "$SDK_ROOT/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
-            if [ -z "$APKSIGNER" ]; then
-              echo "::error::Android apksigner was not found."
-              exit 1
-            fi
-            "$APKSIGNER" verify --verbose --print-certs "$APK"
-          elif [ -s "$UNSIGNED_APK" ]; then
-            APK="$UNSIGNED_APK"
-            APK_TYPE="release-unsigned"
-            echo "::warning::APK is unsigned and cannot be installed. Configure this project as a non-fork repository to make Actions secrets available."
-          else
-            echo "::error::No Release APK was generated."
-            exit 1
-          fi
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
           SIZE="$(wc -c < "$APK" | tr -d ' ')"
           HUMAN_SIZE="$(du -h "$APK" | cut -f1)"
-          echo "apk_path=$APK" >> "$GITHUB_OUTPUT"
-          echo "apk_type=$APK_TYPE" >> "$GITHUB_OUTPUT"
-          echo "Release APK size: $SIZE bytes ($HUMAN_SIZE)"
+          echo "Debug-signed optimized APK size: $SIZE bytes ($HUMAN_SIZE)"
           {
             echo "### APK build"
-            echo "- Variant: $APK_TYPE"
+            echo "- Variant: Debug (debug keystore signed)"
+            echo "- Minification: R8 enabled"
+            echo "- Resource shrinking: enabled"
             echo "- Version: 1.2 (versionCode 3)"
             echo "- APK size: $SIZE bytes ($HUMAN_SIZE)"
+            echo "- Certificate: SHA-256 digest printed in the verification log above"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload Release APK as workflow artifact
+      - name: Upload APK as workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SafeBaiyun-${{ steps.select_apk.outputs.apk_type }}-apk
-          path: ${{ steps.select_apk.outputs.apk_path }}
+          name: SafeBaiyun-debug-signed-optimized-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14

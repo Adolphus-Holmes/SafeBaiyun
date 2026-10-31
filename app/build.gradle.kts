@@ -33,6 +33,17 @@ android {
         }
     }
     buildTypes {
+        debug {
+            // Keep the debug signing certificate, but run the same shrinking
+            // and resource optimization pipeline used by the release variant.
+            signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
